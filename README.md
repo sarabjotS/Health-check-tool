@@ -1,3 +1,3 @@
-# Health-check-tool
+# DiagnoBuddy
 
-Idea is to have a tool run the Health check and then produce conversation content which suggests actions(SOPs) to be taken if any module is not returning accepted results
+We have built an interactive chatbot, named "DiagnoBuddy", which will help a user diagnose the health of an application running on different environments. It allows a user to get complete health parameters of an application by asking a simple question such as "Is my application running fine on STG environment?". DiabnoBuddy not only evaluates the health of an application, but also diagnoses the problem and suggests the user in an intuitive way to follow an SOP for further troubleshooting and fixing the problem.
