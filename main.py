@@ -49,7 +49,7 @@ def getURL(environment):
     if KRONOS_DOT_COM not in environment:
         if(len(environment) > 2 and environment[:3]=='tsc'):
             environment = environment[4:] if(len(environment)>3 and environment[3] == '-') else environment[3:]
-        return f'https://tenant1-{environment}-tsc.dev.mykronos.com/telestaff/healthCheck/advanced'
+        return f'https://tenant1-{environment}-tsc.dev.mykronos.com'
         
     else:
         indexOfKronosDotCom = environment.index(KRONOS_DOT_COM)
@@ -58,7 +58,7 @@ def getURL(environment):
         if("http" in healthCheckUrl):
             return healthCheckUrl[healthCheckUrl.rindex("http"): ]
         else:
-            return f'https://{healthCheckUrl}/telestaff/healthCheck/advanced'
+            return f'https://{healthCheckUrl}'
     
 def runHealthCheck(healthCheckUrl:str):
     response = requests.get(healthCheckUrl)
@@ -89,8 +89,8 @@ def checkHealth(message):
         message = input('''\nI could not figure out your environment from your message.\nCould you give me the name of the environment? Or you could even give me its url\n\n''')
         if(message.lower() not in negativeResponseSet):
             environment = message
-    healthCheckUrl = getURL(environment)
-    return healthCheckUrl, *runHealthCheck(healthCheckUrl)
+    URL = getURL(environment)
+    return URL, *runHealthCheck(URL+"/telestaff/healthCheck/advanced")
         
         
 
@@ -107,7 +107,6 @@ def main():
             print(closingGreeting)
             break
         
-        # if(areTheseSame(userMessage, 'run health check')):
         if all([ word in userMessage for word in runHealthCheckWordsList]):
             url, serviceStatus, applicationStatus, tenantStatus = str(), dict(),dict(),dict()
             try:
@@ -115,19 +114,16 @@ def main():
             except:
                 print("\nThis application environment is unreachable")
                 outputMessage = "\nDo you want me to help you with something else?\n\n"
-                
+                continue
                 
             if False not in applicationStatus.values():
                 userMessage = input("\nApplication is healthy\nDo you want me to give you its URL?\n\n")
                 if(userMessage in positiveResponseSet):
-                    # print("\nURL:" + getURL(environment))
                     print("\nURL:" + url)
             else:
                 userMessage = input("\nApplication is not healthy!\nDo you want me to show you what fails?\n\n")
                 if(userMessage not in negativeResponseSet):
-                    # closeConversation = True
-                    # continue
-                    print(f'''URL = {getURL(environment)}\n{formatStatus(("Application Status", applicationStatus))}''')
+                    print(f'''URL = {url}\n{formatStatus(("Application Status", applicationStatus))}''')
                     userMessage = input("\nDo you want me provide you with some SOPs?\n\n")
                     if(userMessage not in negativeResponseSet):
                         suggestedLinks = { app:SOPMapping[app]  }
