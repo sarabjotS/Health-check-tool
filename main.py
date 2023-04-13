@@ -17,6 +17,7 @@ SOPMapping = {
     'workflowUp': "https://engconf.int.kronos.com/x/S9A6GQ",
     'biddingUp': "https://engconf.int.kronos.com/x/S9A6GQ"
 }
+parentSOPLink = "https://engconf.int.kronos.com/x/OdA6GQ"
 
 def askLLM(*questions):
     data = {'instances': questions,
@@ -107,7 +108,7 @@ def main():
             print(closingGreeting)
             break
         
-        if all([ word in userMessage for word in runHealthCheckWordsList]):
+        if all([ word in userMessage for word in runHealthCheckWordsList ]):
             url, serviceStatus, applicationStatus, tenantStatus = str(), dict(),dict(),dict()
             try:
                 url, serviceStatus, applicationStatus, tenantStatus = checkHealth(userMessage)
@@ -126,12 +127,12 @@ def main():
                     print(f'''URL = {url}\n{formatStatus(("Application Status", applicationStatus))}''')
                     userMessage = input("\nDo you want me provide you with some SOPs?\n\n")
                     if(userMessage not in negativeResponseSet):
-                        suggestedLinks = { app:SOPMapping[app]  }
-                        
-                        print("\nThe following link(s) might help:")
-                        for app in applicationStatus:
-                            if not applicationStatus[app]:
-                                print(f"\t{app[:-2]} : {suggestedLinks[app]}")
+                        suggestedLinks = [ SOPMapping[app] for app in applicationStatus if not applicationStatus[app] ]
+                        if len(suggestedLinks)==0:
+                            suggestedLinks.append(parentSOPLink)
+                        print(f"\nThe following link{'s' if(len(suggestedLinks)>1) else ''} might help:")
+                        for link in suggestedLinks:
+                                print(f"\t{link}")
             
         
         userMessage = input("\nDo you want me to do anything else?\n\n")
@@ -142,8 +143,6 @@ def main():
             userMessage = input("\nHow may I help you?\n\n")
             
             
-    
-    
 if __name__ == "__main__":
     main()
 
