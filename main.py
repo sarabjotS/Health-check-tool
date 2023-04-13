@@ -50,16 +50,16 @@ def getURL(environment):
     if KRONOS_DOT_COM not in environment:
         if(len(environment) > 2 and environment[:3]=='tsc'):
             environment = environment[4:] if(len(environment)>3 and environment[3] == '-') else environment[3:]
-        return f'https://tenant1-{environment}-tsc.dev.mykronos.com'
+        return f'https://tenant1-{environment}-tsc.dev.mykronos.com/telestaff'
         
     else:
         indexOfKronosDotCom = environment.index(KRONOS_DOT_COM)
         healthCheckUrl = environment[ : indexOfKronosDotCom+len(KRONOS_DOT_COM) ]
         healthCheckUrl = healthCheckUrl[healthCheckUrl.rindex(" ")+1: ]
         if("http" in healthCheckUrl):
-            return healthCheckUrl[healthCheckUrl.rindex("http"): ]
+            return healthCheckUrl[healthCheckUrl.rindex("http"): ] + "/telestaff"
         else:
-            return f'https://{healthCheckUrl}'
+            return f'https://{healthCheckUrl}/telestaff'
     
 def runHealthCheck(healthCheckUrl:str):
     response = requests.get(healthCheckUrl)
@@ -91,7 +91,7 @@ def checkHealth(message):
         if(message.lower() not in negativeResponseSet):
             environment = message
     URL = getURL(environment)
-    return URL, *runHealthCheck(URL+"/telestaff/healthCheck/advanced")
+    return URL, *runHealthCheck(URL+"/healthCheck/advanced")
         
         
 
@@ -105,42 +105,40 @@ def main():
         userMessage = input()
         if(closeConversation or (userMessage.lower() in closingWords)):
             closeConversation = False
-            print(closingGreeting)
             break
         
         if all([ word in userMessage for word in runHealthCheckWordsList ]):
             url, serviceStatus, applicationStatus, tenantStatus = str(), dict(),dict(),dict()
             try:
                 url, serviceStatus, applicationStatus, tenantStatus = checkHealth(userMessage)
+                
+                if False not in applicationStatus.values():
+                    userMessage = input("\nApplication is healthy\nDo you want me to give you its URL?\n\n")
+                    if(userMessage in positiveResponseSet):
+                        print("\nURL:" + url)
+                else:
+                    userMessage = input("\nApplication is not healthy!\nDo you want me to show you what fails?\n\n")
+                    if(userMessage not in negativeResponseSet):
+                        print(f'''URL = {url}\n{formatStatus(("Application Status", applicationStatus))}''')
+                        userMessage = input("\nDo you want me provide you with some SOPs?\n\n")
+                        if(userMessage not in negativeResponseSet):
+                            suggestedLinks = [ SOPMapping[app] for app in applicationStatus if not applicationStatus[app] ]
+                            if len(suggestedLinks)==0:
+                                suggestedLinks.append(parentSOPLink)
+                            print(f"\nThe following link{'s' if(len(suggestedLinks)>1) else ''} might help:")
+                            for link in suggestedLinks:
+                                    print(f"\t{link}")
             except:
                 print("\nThis application environment is unreachable")
-                outputMessage = "\nDo you want me to help you with something else?\n\n"
                 continue
-                
-            if False not in applicationStatus.values():
-                userMessage = input("\nApplication is healthy\nDo you want me to give you its URL?\n\n")
-                if(userMessage in positiveResponseSet):
-                    print("\nURL:" + url)
-            else:
-                userMessage = input("\nApplication is not healthy!\nDo you want me to show you what fails?\n\n")
-                if(userMessage not in negativeResponseSet):
-                    print(f'''URL = {url}\n{formatStatus(("Application Status", applicationStatus))}''')
-                    userMessage = input("\nDo you want me provide you with some SOPs?\n\n")
-                    if(userMessage not in negativeResponseSet):
-                        suggestedLinks = [ SOPMapping[app] for app in applicationStatus if not applicationStatus[app] ]
-                        if len(suggestedLinks)==0:
-                            suggestedLinks.append(parentSOPLink)
-                        print(f"\nThe following link{'s' if(len(suggestedLinks)>1) else ''} might help:")
-                        for link in suggestedLinks:
-                                print(f"\t{link}")
-            
-        
-        userMessage = input("\nDo you want me to do anything else?\n\n")
-        if(userMessage.lower() in negativeResponseSet):
-            closeConversation = True
-            print(closingGreeting)
-        elif(userMessage.lower() in positiveResponseSet):
-            userMessage = input("\nHow may I help you?\n\n")
+            finally:
+                userMessage = input("\nDo you want me to help you with something else?\n\n")
+                if(userMessage.lower() in negativeResponseSet):
+                    closeConversation = True
+                    break
+                elif(userMessage.lower() in positiveResponseSet):
+                    outputMessage = "How may I help you?"
+    print(closingGreeting)
             
             
 if __name__ == "__main__":
