@@ -5,6 +5,8 @@
 3. Run:
     pip install requests
 
-4. Open cmd/powershell/bash inside project root directory and run:
+4. Clone the project code to local
+
+5. Open a terminal inside the project root directory and run:
     python main.py
 
