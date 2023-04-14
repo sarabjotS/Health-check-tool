@@ -27,7 +27,7 @@ def askLLM(*questions):
     try:
         response = requests.post('http://130.211.213.132/predict', json=data)
     except(error):
-        print(error)
+        print("Sorry! application is unreachable")
     return response.json()
 
 
@@ -77,22 +77,29 @@ def summarize(applicationStatus, serviceStatus) -> str:
     return askLLM(f"What is not up in this data: {applicationStatus}, {serviceStatus}")['predictions'][0]
 
 
-def formatStatus(*nameStatusTuples):
+def formatStatus(applicationStatus: dict):
+    output = "Application Status:"
+    for name in applicationStatus:
+        output += f"\n\t{name[:-2]} is {'not ' if not applicationStatus[name] else ''}running"
+    return output
+
+
+def formatStatusTuples(*nameStatusTuples: tuple):
     output = ""
     for name, status in nameStatusTuples:
-        output += name + ''':\n'''
-        for key, value in status:
-            output += f"\t{key[:-2]} is {'not ' if not value else ''}running"
+        output += f"{name}:"
+        for key in status:
+            output += f"\n\t{key[:-2]} is {'not ' if not status[key] else ''}running"
     return output
 
 def checkHealth(message):
     environment = getEnvironmentName(message)
     if(environment not in validEnvironments):
-        message = input("\nI could not figure out your environment from your message.\nCould you give me the name of the environment? Or you could even give me its url\n\nMe:")
+        message = input(f"\n{appName}: I could not figure out your environment from your message.\nCould you give me the name of the environment? Or you could even give me its url\n\nMe:")
         if(message.lower() not in negativeResponseSet):
             environment = message
     URL = getURL(environment)
-    return URL, *runHealthCheck(URL+"/healthCheck/basic")
+    return URL, *runHealthCheck(URL+"/healthCheck/advanced")
         
         
 
@@ -102,7 +109,7 @@ def main():
 
     while(not closeConversation):
         
-        print(f"{appName}: {outputMessage}\n")
+        print(f"\n{appName}: {outputMessage}\n")
         userMessage = input("Me:")
         if(closeConversation or (userMessage.lower() in closingWords)):
             closeConversation = False
@@ -125,8 +132,8 @@ def main():
                 userMessage = input(f"\n{appName}: Application is not healthy!\nDo you want me to show you what fails?\n\nMe:")
                 
                 if(userMessage not in negativeResponseSet):
-                    print(f"{appName}: URL = {url}\n{formatStatus(('Application Status', applicationStatus))}")
-                    userMessage = input(f"\n{appNamde}: Do you want me provide you with some SOPs?\n\nMe:")
+                    print(f"{appName}: URL = {url}\n{formatStatus(applicationStatus)}")
+                    userMessage = input(f"\n{appName}: Do you want me provide you with some SOPs?\n\nMe:")
                     if(userMessage not in negativeResponseSet):
                         suggestedLinks = [ SOPMapping[app] for app in applicationStatus if not applicationStatus[app] ]
                         if len(suggestedLinks)==0:
@@ -134,8 +141,8 @@ def main():
                         print(f"\n{appName}: The following link{'s' if(len(suggestedLinks)>1) else ''} might help:")
                         for link in suggestedLinks:
                                 print(f"\t{link}")
-        except error:
-            print(f"\n{appName}: This application environment is unreachable")
+        except:
+            print(f"\n{appName}: Oops! looks like something went wrong.")
             continue
         finally:
             userMessage = input(f"\n{appName}: Do you want me to help you with something else?\n\nMe:")
@@ -144,7 +151,7 @@ def main():
                 break
             elif(userMessage.lower() in positiveResponseSet):
                 outputMessage = "How may I help you?"
-    print(closingGreeting)
+    print(f"\n{appName}: {closingGreeting}")
             
             
 if __name__ == "__main__":
