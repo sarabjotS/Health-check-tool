@@ -5,3 +5,6 @@
 3. Run:
     pip install requests
 
+4. Open cmd/powershell/bash inside project root directory and run:
+    python main.py
+
