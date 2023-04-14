@@ -55,8 +55,11 @@ def getURL(environment):
         
     else:
         indexOfKronosDotCom = environment.index(KRONOS_DOT_COM)
-        healthCheckUrl = environment[ : indexOfKronosDotCom+len(KRONOS_DOT_COM) ]
-        healthCheckUrl = healthCheckUrl[healthCheckUrl.rindex(" ")+1: ]
+        urlEndIndex = indexOfKronosDotCom+len(KRONOS_DOT_COM)
+        healthCheckUrl = environment[ : urlEndIndex ]
+        urlStartIndex = healthCheckUrl.rindex(" ")+1
+        if(urlStartIndex > urlEndIndex):
+            healthCheckUrl = healthCheckUrl[ urlStartIndex : ]
         if("http" in healthCheckUrl):
             return healthCheckUrl[healthCheckUrl.rindex("http"): ] + "/telestaff/"
         else:
