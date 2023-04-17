@@ -3,7 +3,7 @@ from requests.exceptions import ConnectionError
 from enum import Enum
 
 appName = "DiagnoBuddy"
-userName = "Me"
+userName = "User"
 openingGreeting = f"Hi, I am {appName}. How may I help you?"
 closingGreeting = f'Thanks for using {appName}. Bye and have a nice day!'
 closingWords = { 'close', 'stop', 'bye', 'exit', 'end', 'shut down', 'shutdown'}
