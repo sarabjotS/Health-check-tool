@@ -1,9 +1,11 @@
 import requests
+from requests.exceptions import ConnectionError
 from enum import Enum
 
 appName = "DiagnoBuddy"
+userName = "Me"
 openingGreeting = f"Hi, I am {appName}. How may I help you?"
-closingGreeting = 'Bye, have a nice day'
+closingGreeting = f'Thanks for using {appName}. Bye and have a nice day!'
 closingWords = { 'close', 'stop', 'bye', 'exit', 'end', 'shut down', 'shutdown'}
 positiveResponseSet = {'yes', 'yeah', 'yep', 'true', True, 'ofcourse', 'of course'}
 negativeResponseSet = {'no', 'false', 'negative', 'nopes', 'nope', False}
@@ -27,7 +29,7 @@ def askLLM(*questions):
     try:
         response = requests.post('http://130.211.213.132/predict', json=data)
     except(error):
-        print("Sorry! application is unreachable")
+        print("Sorry! GoogleLLM is unreachable at the moment. Please try again after some time.")
     return response.json()
 
 
@@ -57,9 +59,10 @@ def getURL(environment):
         indexOfKronosDotCom = environment.index(KRONOS_DOT_COM)
         urlEndIndex = indexOfKronosDotCom+len(KRONOS_DOT_COM)
         healthCheckUrl = environment[ : urlEndIndex ]
-        urlStartIndex = healthCheckUrl.rindex(" ")+1
-        if(urlStartIndex > urlEndIndex):
-            healthCheckUrl = healthCheckUrl[ urlStartIndex : ]
+        if " " in healthCheckUrl:
+            urlStartIndex = healthCheckUrl.rindex(" ")+1
+            if(urlStartIndex > urlEndIndex):
+                healthCheckUrl = healthCheckUrl[ urlStartIndex : ]
         if("http" in healthCheckUrl):
             return healthCheckUrl[healthCheckUrl.rindex("http"): ] + "/telestaff/"
         else:
@@ -98,13 +101,13 @@ def formatStatusTuples(*nameStatusTuples: tuple):
 def checkHealth(message):
     environment = getEnvironmentName(message)
     if(environment not in validEnvironments):
-        message = input(f"\n{appName}: I could not figure out your environment from your message.\nCould you give me the name of the environment? Or you could even give me its url\n\nMe:")
+        message = input(f"\n{appName}: I could not figure out the environment name from your message.\nCould you please help me with the name of the environment or its URL?\n\n{userName}: ")
         if(message.lower() not in negativeResponseSet):
             environment = message
     URL = getURL(environment)
-    return URL, *runHealthCheck(URL+"/healthCheck/advanced")
-        
-        
+    return URL, *runHealthCheck(URL+"healthCheck/advanced")
+
+
 
 def main():
     closeConversation = False
@@ -113,42 +116,44 @@ def main():
     while(not closeConversation):
         
         print(f"\n{appName}: {outputMessage}\n")
-        userMessage = input("Me:")
+        userMessage = input(f"{userName}: ")
         if(closeConversation or (userMessage.lower() in closingWords)):
             closeConversation = False
             break
         
         if not any([ word in userMessage for word in triggerHealthCheckWords ]):
-            userMessage = askLLM("Paraphrase this: " + userMessage)['predictions'][0]
+            userMessage = askLLM("Rephrase this: " + userMessage)['predictions'][0]
             if not any([ word in userMessage for word in triggerHealthCheckWords ]):
-                outputMessage = "Sorry, I could not understand. Could you repeat that in a way which is a little easier for me to understand?"
+                outputMessage = "Sorry, I could not comprehend your request. Could you please rephrase your request?"
                 continue
         url, serviceStatus, applicationStatus, tenantStatus = str(), dict(),dict(),dict()
         try:
             url, serviceStatus, applicationStatus, tenantStatus = checkHealth(userMessage)
             
             if False not in applicationStatus.values():
-                userMessage = input("\nApplication is healthy\nDo you want me to give you its URL?\n\nMe:")
+                userMessage = input(f"\n{appName}: Yay! Your application is super healthy on the specified environment.\nDo you want me to help you with its URL?\n\n{userName}: ")
                 if(userMessage in positiveResponseSet):
                     print(f"\n{appName}: URL: {url}")
             else:
-                userMessage = input(f"\n{appName}: Application is not healthy!\nDo you want me to show you what fails?\n\nMe:")
-                
+                userMessage = input(f"\n{appName}: Sorry to say that your application is not running healthy on the specified environment!\nDo you want me to show you details around what is failing?\n\n{userName}: ")
                 if(userMessage not in negativeResponseSet):
                     print(f"{appName}: URL = {url}\n{formatStatus(applicationStatus)}")
-                    userMessage = input(f"\n{appName}: Do you want me provide you with some SOPs?\n\nMe:")
+                    
+                    userMessage = input(f"\n{appName}: Do you want me to help you with SOPs to address this issue?\n\n{userName}: ")
                     if(userMessage not in negativeResponseSet):
                         suggestedLinks = [ SOPMapping[app] for app in applicationStatus if not applicationStatus[app] ]
                         if len(suggestedLinks)==0:
                             suggestedLinks.append(parentSOPLink)
                         print(f"\n{appName}: The following link{'s' if(len(suggestedLinks)>1) else ''} might help:")
                         for link in suggestedLinks:
-                                print(f"\t{link}")
+                            print(f"\t{link}")
+               
+        except ConnectionError as error:
+            print(f"\n{appName}: Oops! The specified environment is either invalid or unreachable. Please check the environment name or try again later.")             
         except:
-            print(f"\n{appName}: Oops! looks like something went wrong.")
-            continue
+            print(f"\n{appName}: Something went wrong. Please try again.")
         finally:
-            userMessage = input(f"\n{appName}: Do you want me to help you with something else?\n\nMe:")
+            userMessage = input(f"\n{appName}: Do you want me to help you with something else?\n\n{userName}: ")
             if(userMessage.lower() in negativeResponseSet):
                 closeConversation = True
                 break
