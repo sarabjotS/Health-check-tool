@@ -17,8 +17,8 @@ triggerHealthCheckWords = ('health', 'running')
 
 SOPMapping = {
     'telestaffUp': "https://engconf.int.kronos.com/x/lzWJGg",
-    'workflowUp': "https://engconf.int.kronos.com/x/Ky94Gg",
-    'biddingUp': "https://engconf.int.kronos.com/x/S9A6GQ"
+    'workflowUp': "https://engconf.int.kronos.com/x/S9A6GQ",
+    'biddingUp': "https://engconf.int.kronos.com/x/lzWJGg"
 }
 parentSOPLink = "https://engconf.int.kronos.com/x/OdA6GQ"
 
@@ -105,7 +105,7 @@ def checkHealth(message):
         if(message.lower() not in negativeResponseSet):
             environment = message
     URL = getURL(environment)
-    return URL, *runHealthCheck(URL+"healthCheck/advanced")
+    return URL, *runHealthCheck(URL+"healthCheck/advanced/")
 
 
 
@@ -117,8 +117,8 @@ def main():
         
         print(f"\n{appName}: {outputMessage}\n")
         userMessage = input(f"{userName}: ")
-        if(closeConversation or (userMessage.lower() in closingWords)):
-            closeConversation = False
+        if(closeConversation or (userMessage.lower() in closingWords) or (userMessage.lower() in negativeResponseSet)):
+            closeConversation = True
             break
         
         if not any([ word in userMessage for word in triggerHealthCheckWords ]):
